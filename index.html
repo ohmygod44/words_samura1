@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>単語道場-武士道の心得-</title>
+    <link rel="stylesheet" href="styles.css">
+    
+    <link rel="icon" href="favicon.jpeg" type="image/jpeg">
+
+</head>
+<body>
+
+   
+    <div class="container">
+        <header>
+            <h1>📚 単語道場 📚</h1>
+        </header>
+
+        <div class="upload-section" id="uploadSection">
+            <div class="upload-box">
+                <div class="upload-icon">📄</div>
+                <h2>データを選択してください</h2>
+                
+                <!-- サンプルデータボタン -->
+                <div class="data-selection">
+                    <button class="sample-btn" onclick="loadSampleData()">
+                        🛸応用情報用語集を使う🛸
+                    </button>
+                    <div class="or-divider">または</div>
+                </div>
+                
+                <p>CSVファイルをアップロード<br>
+                    単語,意味 の形式で作成してください</p>
+
+                <input type="file" id="csvFile" accept=".csv" class="file-input">
+                <button class="upload-btn" onclick="document.getElementById('csvFile').click()">
+                    ファイルを選択
+                </button>
+                <div class="file-info" id="fileInfo"></div>
+            </div>
+        </div>
+
+        <div class="app-section" id="appSection" style="display: none;">
+            <div class="controls">
+                <button class="btn btn-primary" onclick="startStudy()">🌸 フラッシュカード</button>
+                <button class="btn btn-quiz" onclick="startQuiz()">🎯 4択クイズ</button>
+                <button class="btn btn-secondary" onclick="showWordList()">📝 単語一覧</button>
+                <button class="btn btn-thirry" onclick="resetApp()">🔄 データ変更</button>
+            </div>
+
+            <div class="study-area" id="studyArea" style="display: none;">
+                <div class="mode-indicator">
+                    <span class="mode-badge" id="modeBadge">🌸 フラッシュカードモード</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress" id="progress"></div>
+                    <div class="progress-text" id="progressText">1 / 10</div>
+                </div>
+                <div class="word-card">
+                    <div class="word-display" id="wordDisplay"></div>
+                    <div class="meaning-display" id="meaningDisplay" style="display: none;"></div>
+                    <div class="card-controls">
+                        <button class="btn btn-show" id="showBtn" onclick="showMeaning()">💖 意味を表示</button>
+                        <button class="btn btn-next" id="nextBtn" onclick="nextWord()" style="display: none;">✨ 次の単語</button>
+                    </div>
+                </div>
+                <div class="study-controls">
+                    <button class="btn btn-secondary" onclick="shuffleWords()">🔀 シャッフル</button>
+                    <button class="btn btn-secondary" onclick="resetStudy()">🌱 最初から</button>
+                </div>
+            </div>
+
+            <div class="quiz-area" id="quizArea" style="display: none;">
+                <div class="mode-indicator">
+                    <span class="mode-badge quiz-badge">🎯 4択クイズモード</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress" id="quizProgress"></div>
+                    <div class="progress-text" id="quizProgressText">1 / 10</div>
+                </div>
+                <div class="score-display">
+                    <div class="score-item">
+                        <span class="score-label">正解数</span>
+                        <span class="score-value" id="correctScore">0</span>
+                    </div>
+                    <div class="score-item">
+                        <span class="score-label">正解率</span>
+                        <span class="score-value" id="accuracyScore">0%</span>
+                    </div>
+                </div>
+                <div class="quiz-card">
+                    <div class="quiz-question" id="quizQuestion"></div>
+                    <div class="quiz-options" id="quizOptions"></div>
+                    <div class="quiz-result" id="quizResult" style="display: none;"></div>
+                    <div class="quiz-controls">
+                        <button class="btn btn-next" id="quizNextBtn" onclick="nextQuiz()" style="display: none;">✨ 次の問題</button>
+                    </div>
+                </div>
+                <div class="study-controls">
+                    <button class="btn btn-secondary" onclick="shuffleWords()">🔀 シャッフル</button>
+                    <button class="btn btn-secondary" onclick="resetQuiz()">🌱 最初から</button>
+                </div>
+            </div>
+
+            <div class="word-list" id="wordList" style="display: none;">
+                <h3>📚 単語一覧 (<span id="wordCount">0</span>語)</h3>
+                <div class="search-box">
+                    <input type="text" id="searchInput" placeholder="🔍 単語を検索..." onkeyup="filterWords()">
+                </div>
+                <div class="words-grid" id="wordsGrid"></div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+
+
+@keyframes walkAround {
+  
+    
+    0%   { left: 0px; bottom: 0; transform: rotate(0deg); }
+  25%  { left: calc(100vw - 40px); bottom: 0; transform: rotate(0deg); }
+  26%  { left: calc(100vw - 40px); bottom: 0; transform: rotate(-90deg); }
+  50%  { left: calc(100vw - 32px); bottom: calc(100vh - 32px); transform: rotate(-90deg); }
+  51%  { left: calc(100vw - 32px); bottom: calc(100vh - 32px); transform: rotate(-180deg); }
+  75%  { left: 0; bottom: calc(100vh - 32px); transform: rotate(-180deg); }
+  76%  { left: 0; bottom: calc(100vh - 32px); transform: rotate(-270deg); }
+  100% { left: 0; bottom: 0; transform: rotate(-270deg); }
+
+
+}
+
+
+.running-animal {
+  position: fixed;
+  bottom: 0;
+  left: -150px;
+  width: 32px;
+  animation: walkAround 1200s linear infinite;
+  z-index: 9999;
+  transform-origin: center center; /* 回転の中心を真ん中にする */
+}
+
+/* サンプルデータボタンのスタイル */
+.data-selection {
+    margin-bottom: 30px;
+}
+
+.sample-btn {
+    background: linear-gradient(45deg, #b6faf7, #5aa6c4);
+    color: #ffffff;
+    border: none;
+    padding: 18px 36px;
+    border-radius: 30px;
+    font-size: 1.1em;
+    cursor: pointer;
+    transition: all 0.3s;
+    box-shadow: 0 5px 15px rgba(168, 237, 234, 0.4);
+    font-weight: 600;
+    margin-bottom: 20px;
+}
+
+.sample-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(168, 237, 234, 0.5);
+    background: linear-gradient(45deg, #7ee8e4, #fdc2e0);
+}
+
+.or-divider {
+    color: #888;
+    font-size: 1em;
+    margin: 15px 0;
+    position: relative;
+}
+
+.or-divider::before,
+.or-divider::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    width: 40%;
+    height: 1px;
+    background: linear-gradient(to right, transparent, #ddd, transparent);
+}
+
+.or-divider::before {
+    left: 0;
+}
+
+.or-divider::after {
+    right: 0;
+}
+</style>
+
+</style>
+
+<img src="animal.gif" class="running-animal" alt="かわいい動物">
+
+
+<div class="emoji-container"></div>
+
+
+    <script>
+        let wordData = [];
+        let currentIndex = 0;
+        let isShuffled = false;
+        let filteredWords = [];
+        let currentMode = 'flashcard'; // 'flashcard' or 'quiz'
+        let quizScore = { correct: 0, total: 0 };
+        let currentQuizOptions = [];
+
+        // data.csvを読み込む関数
+        async function loadSampleData() {
+            try {
+                const response = await fetch('data.csv');
+                if (response.ok) {
+                    const csvData = await response.text();
+                    parseCSV(csvData);
+                    showDataLoadedMessage('data.csvから読み込みました');
+                } else {
+                    throw new Error('data.csvが見つかりません');
+                }
+            } catch (error) {
+                console.error('data.csv読み込みエラー:', error);
+                alert('data.csvファイルが見つかりません。同じディレクトリにdata.csvファイルを配置してください。');
+            }
+        }
+
+        // データ読み込み完了メッセージを表示
+        function showDataLoadedMessage(message) {
+            document.getElementById('fileInfo').innerHTML = `
+                <div class="file-selected">
+                    <span class="file-icon">✨</span>
+                    <span>${message} (${wordData.length}語)</span>
+                </div>
+            `;
+        }
+
+        // ファイルアップロード処理
+        document.getElementById('csvFile').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const csv = e.target.result;
+                    parseCSV(csv);
+                };
+                reader.readAsText(file, 'UTF-8');
+                
+                document.getElementById('fileInfo').innerHTML = `
+                    <div class="file-selected">
+                        <span class="file-icon">✨</span>
+                        <span>${file.name} (${(file.size / 1024).toFixed(1)} KB)</span>
+                    </div>
+                `;
+            }
+        });
+
+        // CSV解析
+        function parseCSV(csv) {
+            const lines = csv.split('\n').filter(line => line.trim());
+            wordData = [];
+            
+            for (let i = 0; i < lines.length; i++) {
+                const columns = lines[i].split(',').map(col => col.trim().replace(/"/g, ''));
+                if (columns.length >= 2 && columns[0] && columns[1]) {
+                    wordData.push({
+                        word: columns[0],
+                        meaning: columns[1]
+                    });
+                }
+            }
+
+            if (wordData.length > 0) {
+                document.getElementById('uploadSection').style.display = 'none';
+                document.getElementById('appSection').style.display = 'block';
+                document.getElementById('wordCount').textContent = wordData.length;
+                filteredWords = [...wordData];
+            } else {
+                alert('CSVファイルの形式が正しくありません。1列目に単語、2列目に意味を入力してください。');
+            }
+        }
+
+        // フラッシュカード学習開始
+        function startStudy() {
+            currentMode = 'flashcard';
+            currentIndex = 0;
+            document.getElementById('studyArea').style.display = 'block';
+            document.getElementById('quizArea').style.display = 'none';
+            document.getElementById('wordList').style.display = 'none';
+            document.getElementById('modeBadge').textContent = '🌸 フラッシュカードモード';
+            showCurrentWord();
+        }
+
+        // 4択クイズ開始
+        function startQuiz() {
+            currentMode = 'quiz';
+            currentIndex = 0;
+            quizScore = { correct: 0, total: 0 };
+            document.getElementById('studyArea').style.display = 'none';
+            document.getElementById('quizArea').style.display = 'block';
+            document.getElementById('wordList').style.display = 'none';
+            updateQuizScore();
+            showCurrentQuiz();
+        }
+
+        // 単語一覧表示
+        function showWordList() {
+            document.getElementById('studyArea').style.display = 'none';
+            document.getElementById('quizArea').style.display = 'none';
+            document.getElementById('wordList').style.display = 'block';
+            displayWordList();
+        }
+
+        // 現在の単語表示（フラッシュカード）
+        function showCurrentWord() {
+            if (wordData.length === 0) return;
+            
+            const word = wordData[currentIndex];
+            document.getElementById('wordDisplay').textContent = word.word;
+            document.getElementById('meaningDisplay').textContent = word.meaning;
+            document.getElementById('meaningDisplay').style.display = 'none';
+            document.getElementById('showBtn').style.display = 'inline-block';
+            document.getElementById('nextBtn').style.display = 'none';
+            
+            updateProgress();
+        }
+
+        // 現在のクイズ表示
+        function showCurrentQuiz() {
+            if (wordData.length === 0) return;
+            
+            const currentWord = wordData[currentIndex];
+            document.getElementById('quizQuestion').textContent = `「${currentWord.word}」の意味は？`;
+            
+            // 選択肢を生成
+            currentQuizOptions = generateQuizOptions(currentWord);
+            
+            const optionsContainer = document.getElementById('quizOptions');
+            optionsContainer.innerHTML = '';
+            
+            currentQuizOptions.forEach((option, index) => {
+                const button = document.createElement('button');
+                button.className = 'quiz-option';
+                button.textContent = option.meaning;
+                button.onclick = () => selectQuizOption(index, option.isCorrect);
+                optionsContainer.appendChild(button);
+            });
+            
+            document.getElementById('quizResult').style.display = 'none';
+            document.getElementById('quizNextBtn').style.display = 'none';
+            
+            updateQuizProgress();
+        }
+
+        // クイズ選択肢生成
+        function generateQuizOptions(correctWord) {
+            const options = [{ meaning: correctWord.meaning, isCorrect: true }];
+            const otherWords = wordData.filter(w => w.meaning !== correctWord.meaning);
+            
+            // ランダムに3つの間違い選択肢を追加
+            while (options.length < 4 && otherWords.length > 0) {
+                const randomIndex = Math.floor(Math.random() * otherWords.length);
+                const wrongOption = otherWords.splice(randomIndex, 1)[0];
+                options.push({ meaning: wrongOption.meaning, isCorrect: false });
+            }
+            
+            // 選択肢をシャッフル
+            for (let i = options.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [options[i], options[j]] = [options[j], options[i]];
+            }
+            
+            return options;
+        }
+
+        // クイズ選択肢選択
+        function selectQuizOption(selectedIndex, isCorrect) {
+            const options = document.querySelectorAll('.quiz-option');
+            const resultDiv = document.getElementById('quizResult');
+            
+            // 全ての選択肢を無効化
+            options.forEach((option, index) => {
+                option.disabled = true;
+                if (currentQuizOptions[index].isCorrect) {
+                    option.classList.add('correct');
+                } else if (index === selectedIndex) {
+                    option.classList.add('selected');
+                }
+            });
+            
+            quizScore.total++;
+            if (isCorrect) {
+                quizScore.correct++;
+                resultDiv.innerHTML = '<div class="result-correct">🎉 正解！</div>';
+                resultDiv.className = 'quiz-result correct-result';
+            } else {
+                resultDiv.innerHTML = '<div class="result-wrong">💫 不正解</div>';
+                resultDiv.className = 'quiz-result wrong-result';
+            }
+            
+            resultDiv.style.display = 'block';
+            document.getElementById('quizNextBtn').style.display = 'inline-block';
+            updateQuizScore();
+        }
+
+        // 意味表示（フラッシュカード）
+        function showMeaning() {
+            document.getElementById('meaningDisplay').style.display = 'block';
+            document.getElementById('showBtn').style.display = 'none';
+            document.getElementById('nextBtn').style.display = 'inline-block';
+        }
+
+        // 次の単語（フラッシュカード）
+        function nextWord() {
+            currentIndex = (currentIndex + 1) % wordData.length;
+            showCurrentWord();
+        }
+
+        // 次のクイズ
+        function nextQuiz() {
+            currentIndex = (currentIndex + 1) % wordData.length;
+            showCurrentQuiz();
+        }
+
+        // プログレス更新
+        function updateProgress() {
+            const progress = ((currentIndex + 1) / wordData.length) * 100;
+            document.getElementById('progress').style.width = progress + '%';
+            document.getElementById('progressText').textContent = `${currentIndex + 1} / ${wordData.length}`;
+        }
+
+        // クイズプログレス更新
+        function updateQuizProgress() {
+            const progress = ((currentIndex + 1) / wordData.length) * 100;
+            document.getElementById('quizProgress').style.width = progress + '%';
+            document.getElementById('quizProgressText').textContent = `${currentIndex + 1} / ${wordData.length}`;
+        }
+
+        // クイズスコア更新
+        function updateQuizScore() {
+            document.getElementById('correctScore').textContent = quizScore.correct;
+            const accuracy = quizScore.total > 0 ? Math.round((quizScore.correct / quizScore.total) * 100) : 0;
+            document.getElementById('accuracyScore').textContent = accuracy + '%';
+        }
+
+        // シャッフル
+        function shuffleWords() {
+            for (let i = wordData.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [wordData[i], wordData[j]] = [wordData[j], wordData[i]];
+            }
+            currentIndex = 0;
+            if (currentMode === 'flashcard') {
+                showCurrentWord();
+            } else {
+                showCurrentQuiz();
+            }
+            isShuffled = true;
+        }
+
+        // 学習リセット
+        function resetStudy() {
+            currentIndex = 0;
+            showCurrentWord();
+        }
+
+        // クイズリセット
+        function resetQuiz() {
+            currentIndex = 0;
+            quizScore = { correct: 0, total: 0 };
+            updateQuizScore();
+            showCurrentQuiz();
+        }
+
+        // 単語一覧表示
+        function displayWordList() {
+            const grid = document.getElementById('wordsGrid');
+            grid.innerHTML = '';
+            
+            filteredWords.forEach((word, index) => {
+                const wordItem = document.createElement('div');
+                wordItem.className = 'word-item';
+                wordItem.innerHTML = `
+                    <div class="word-item-word">${word.word}</div>
+                    <div class="word-item-meaning">${word.meaning}</div>
+                `;
+                grid.appendChild(wordItem);
+            });
+        }
+
+        // 単語検索
+        function filterWords() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            filteredWords = wordData.filter(word => 
+                word.word.toLowerCase().includes(searchTerm) || 
+                word.meaning.toLowerCase().includes(searchTerm)
+            );
+            displayWordList();
+        }
+
+        // アプリリセット
+        function resetApp() {
+            document.getElementById('uploadSection').style.display = 'block';
+            document.getElementById('appSection').style.display = 'none';
+            document.getElementById('csvFile').value = '';
+            document.getElementById('fileInfo').innerHTML = '';
+            wordData = [];
+            currentIndex = 0;
+            quizScore = { correct: 0, total: 0 };
+        }
+    </script>
+
+<script>
+  const emojiList = ['🍥','🍒','🐰','🐻‍❄️','🐼','🦥','🐣','🍈','🌭','🛸','😿', '😼', '💖', '🎀', '🍭', '🙀', '😾', '💫', '⭐', '🌟',  '🧁', '🍬', '🎉','🐰','😻','👽','🤮','👻','💩','😻','👻','😻','👻','🐧','🎃','🍼'];
+
+
+  const container = document.querySelector('.emoji-container');
+
+  function createEmoji() {
+    const emoji = document.createElement('div');
+    emoji.classList.add('emoji');
+    emoji.textContent = emojiList[Math.floor(Math.random() * emojiList.length)];
+    emoji.style.left = Math.random() * 100 + 'vw';
+    emoji.style.top = Math.random() * 80 + 'vh'; // ← 画面のいろんな高さから出る！
+    emoji.style.fontSize = (Math.random() * 3 + 2) + 'em';
+    emoji.style.animationDuration = (Math.random() * 2 + 3) + 's';
+    container.appendChild(emoji);
+    setTimeout(() => emoji.remove(), 5000);
+  }
+
+  setInterval(createEmoji, 400);
+
+  document.addEventListener('click', function(e) {
+    const paw = document.createElement('div');
+    paw.classList.add('paw-stamp');
+    paw.textContent = '🐾';
+    paw.style.left = e.clientX + 'px';
+    paw.style.top = e.clientY + 'px';
+    document.body.appendChild(paw);
+    setTimeout(() => paw.remove(), 1200);
+  });
+</script>
+
+
+
+
+
+</body>
+</html>
+
+
